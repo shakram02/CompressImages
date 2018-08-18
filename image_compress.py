@@ -1,11 +1,11 @@
-from PIL import Image, ImageFile
-from sys import exit, stderr
-from os.path import getsize, isfile, isdir, join
-from os import remove, rename, walk, stat, path
-from stat import S_IWRITE
-from shutil import move
-from argparse import ArgumentParser
 from abc import ABCMeta, abstractmethod
+from argparse import ArgumentParser
+from os import walk, stat, path
+from os.path import getsize, isfile, isdir, join
+from stat import S_IWRITE
+from sys import exit, stderr
+
+from PIL import Image, ImageFile
 
 
 class ProcessBase:
@@ -14,7 +14,7 @@ class ProcessBase:
 
     def __init__(self):
         self.extensions = []
-        self.backup_extension = 'compressimages-backup'
+        self.backup_extension = 'compressed_'
 
     @abstractmethod
     def process_file(self, filename):
@@ -105,74 +105,24 @@ class CompressImage(ProcessBase):
         return ok
 
 
-class RestoreBackupImage(ProcessBase):
-    """Processor which restores image from backup."""
-
-    def __init__(self):
-        ProcessBase.__init__(self)
-        self.extensions = [self.backup_extension]
-
-    def process_file(self, filename):
-        """Moves the backup file back to its original name."""
-        try:
-            move(filename, filename[: -(len(self.backup_extension) + 1)])
-            return True
-        except Exception as e:
-            stderr.write('Failed to restore backup file "' + filename + '": ' + str(e) + '\n')
-            return False
-
-
-class DeleteBackupImage(ProcessBase):
-    """Processor which deletes backup image."""
-
-    def __init__(self):
-        ProcessBase.__init__(self)
-        self.extensions = [self.backup_extension]
-
-    def process_file(self, filename):
-        """Deletes the specified file."""
-        try:
-            remove(filename)
-            return True
-        except Exception as e:
-            stderr.write('Failed to delete backup file "' + filename + '": ' + str(e) + '\n')
-            return False
-
-
 if __name__ == "__main__":
     # Argument parsing
-    mode_compress = 'compress'
-    mode_restore_backup = 'restorebackup'
-    mode_delete_backup = 'deletebackup'
+    default_quality = 75
     parser = ArgumentParser(description='Reduce file size of PNG and JPEG images.')
     parser.add_argument(
         'path',
         help='File or directory name')
+
     parser.add_argument(
-        '--mode', dest='mode', default=mode_compress,
-        choices=[mode_compress, mode_restore_backup, mode_delete_backup],
-        help='Mode to run with (default: ' + mode_compress + '). '
-             + mode_compress + ': Compress the image(s). '
-             + mode_restore_backup + ': Restore the backup images (valid for directory path only). '
-             + mode_delete_backup + ': Delete the backup images (valid for directory path only).')
+        '-q', '--quality', dest='quality', default=default_quality,
+        type=int,
+        help='Compression quality')
 
     args = parser.parse_args()
-
-    # Construct processor requested mode
-    if args.mode == mode_compress:
-        processor = CompressImage(50)
-    elif args.mode == mode_restore_backup:
-        processor = RestoreBackupImage()
-    elif args.mode == mode_delete_backup:
-        processor = DeleteBackupImage()
-    else:
-        raise RuntimeError("No mode selected")
+    processor = CompressImage(args.quality)
 
     # Run according to whether path is a file or a directory
     if isfile(args.path):
-        if args.mode != mode_compress:
-            stderr.write('Mode "' + args.mode + '" supported on directories only.\n')
-            exit(1)
         processor.process_file(args.path)
     elif isdir(args.path):
         filecount = processor.process_dir(args.path)

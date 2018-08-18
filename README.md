@@ -3,18 +3,15 @@ CompressImages
 
 Python script for automatically reducing size of all JPEG and PNG images in a directory.
 
-Usage: `compressimages.py [-h] [--mode {compress,restorebackup,deletebackup}] path`
+Usage: `compressimages.py [-h] [--quailty] [-q] path`
 
 Positional arguments:  
   `path`                File or directory name
 
 Optional arguments:  
   `-h, --help`          show this help message and exit  
-  `--mode {compress,restorebackup,deletebackup}` Mode to run with (default: compress)  
-  * `compress`: Compress the image(s).  
-  * `restorebackup`: Restore the backup images (valid for directory path only).  
-  * `deletebackup`: Delete the backup images (valid for directory path only).  
+  `-q, --quality` compression quality (default=75)  
 
-Python 2.7 or later is required.
+Python 3 or later is required.
 
 See [Using Python to Reduce JPEG and PNG Image File Sizes Without Loss of Quality (Softwariness.com)](https://www.softwariness.com/articles/reduce-image-file-sizes-using-python/) for more information.
