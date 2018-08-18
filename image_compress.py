@@ -1,7 +1,7 @@
 from PIL import Image, ImageFile
 from sys import exit, stderr
 from os.path import getsize, isfile, isdir, join
-from os import remove, rename, walk, stat
+from os import remove, rename, walk, stat, path
 from stat import S_IWRITE
 from shutil import move
 from argparse import ArgumentParser
@@ -53,65 +53,55 @@ class CompressImage(ProcessBase):
         self.compression_quality = compression_quality
         self.extensions = ['jpg', 'jpeg', 'png']
 
-    def process_file(self, filename):
+    def process_file(self, src_full_path):
         """Renames the specified image to a backup path,
         and writes out the image again with optimal settings."""
         try:
             # Skip read-only files
-            if not stat(filename)[0] & S_IWRITE:
-                print('Ignoring read-only file "' + filename + '".')
+            if not stat(src_full_path)[0] & S_IWRITE:
+                print('Ignoring read-only file "' + src_full_path + '".')
                 return False
 
             # Create a backup
-            backup_name = filename + '.' + self.backup_extension
+            file_name = path.basename(src_full_path)
+            dir_path = path.dirname(src_full_path)
+            output_path = path.join(dir_path, self.backup_extension + '-' + file_name)
 
-            if isfile(backup_name):
-                print('Ignoring file "' + filename + '" for which existing backup file is present.')
-                return False
-
-            rename(filename, backup_name)
         except Exception as e:
-            stderr.write('Skipping file "' + filename + '" for which backup cannot be made: ' + str(e) + '\n')
+            stderr.write('Skipping file "' + src_full_path + '" for which backup cannot be made: ' + str(e) + '\n')
             return False
 
         ok = False
 
         try:
             # Open the image
-            with open(backup_name, 'rb') as file:
+            with open(src_full_path, 'rb') as file:
                 img = Image.open(file)
 
                 # Check that it's a supported format
                 file_format = str(img.format)
                 if file_format != 'PNG' and file_format != 'JPEG':
-                    print('Ignoring file "' + filename + '" with unsupported format ' + file_format)
+                    print('Ignoring file "' + src_full_path + '" with unsupported format ' + file_format)
                     return False
 
                 # This line avoids problems that can arise saving larger JPEG files with PIL
                 ImageFile.MAXBLOCK = img.size[0] * img.size[1]
 
                 # The 'quality' option is ignored for PNG files
-                img.save(filename, quality=self.compression_quality, optimize=True)
+                img.save(output_path, quality=self.compression_quality, optimize=True)
 
             # Check that we've actually made it smaller
-            origsize = getsize(backup_name)
-            newsize = getsize(filename)
+            org_size = getsize(src_full_path)
+            out_size = getsize(output_path)
 
-            if newsize >= origsize:
-                print('Cannot further compress "' + filename + '".')
+            if out_size >= org_size:
+                print('Cannot further compress "' + src_full_path + '".')
                 return False
 
             # Successful compression
             ok = True
         except Exception as e:
-            stderr.write('Failure whilst processing "' + filename + '": ' + str(e) + '\n')
-        finally:
-            if not ok:
-                try:
-                    move(backup_name, filename)
-                except Exception as e:
-                    stderr.write('ERROR: could not restore backup file for "' + filename + '": ' + str(e) + '\n')
-
+            stderr.write('Failure whilst processing "' + src_full_path + '": ' + str(e) + '\n')
         return ok
 
 
