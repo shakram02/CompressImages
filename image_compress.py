@@ -14,7 +14,7 @@ class ProcessBase:
 
     def __init__(self):
         self.extensions = []
-        self.backup_extension = 'compressed_'
+        self.backup_extension = 'compressed'
 
     @abstractmethod
     def process_file(self, filename):
@@ -26,22 +26,19 @@ class ProcessBase:
         """Recursively processes files in the specified directory matching
         the self.extensions list (case-insensitively)."""
 
+        # TODO: report progress to the user n/x images converted
+
         file_count = 0  # Number of files successfully updated
 
         for root, dirs, files in walk(path):
+            # Check file extensions against allowed list
+            files = filter(lambda f: f.endswith(tuple(self.extensions)), files)
+
             for file in files:
-                # Check file extensions against allowed list
-                lowercase_file = file.lower()
-                matches = False
-                for ext in self.extensions:
-                    if lowercase_file.endswith('.' + ext):
-                        matches = True
-                        break
-                if matches:
-                    # File has eligible extension, so process
-                    full_path = join(root, file)
-                    if self.process_file(full_path):
-                        file_count = file_count + 1
+                full_path = join(root, file)
+                if self.process_file(full_path):
+                    file_count = file_count + 1
+
         return file_count
 
 
