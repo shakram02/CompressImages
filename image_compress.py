@@ -26,8 +26,6 @@ class ProcessBase:
         """Recursively processes files in the specified directory matching
         the self.extensions list (case-insensitively)."""
 
-        # TODO: report progress to the user n/x images converted
-
         file_count = 0  # Number of files successfully updated
 
         for root, dirs, files in walk(path):
@@ -38,7 +36,7 @@ class ProcessBase:
                 full_path = join(root, file)
                 if self.process_file(full_path):
                     file_count = file_count + 1
-
+                    print("Compressed:", file)
         return file_count
 
 
