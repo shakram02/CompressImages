@@ -1,9 +1,9 @@
-CompressImages
+Image Compressor
 ==============
 
 Python script for automatically reducing size of all JPEG and PNG images in a directory.
 
-Usage: `compressimages.py [-h] [--quailty] [-q] path`
+Usage: `compressimages.py [-h] [-q] path`
 
 Positional arguments:  
   `path`                File or directory name
